@@ -46,6 +46,15 @@ func (s *Server) handleFunctionCall2(c *gin.Context) error {
 	}
 
 	routePath := path.Clean(p)
+	logrus.Debugf("Found Route Path: %s, %v", routePath, c.Request.Header)
+	if versions, ok := c.Request.Header["X-Function-Version"]; ok == true {
+		if len(versions) > 0 {
+			logrus.Debug("Found version Header")
+			routePath = routePath + "/" + versions[0]
+			logrus.Debugf("Mod Route Path to: %s", routePath)
+		}
+	}
+
 	route, err := s.lbReadAccess.GetRoute(ctx, appID, routePath)
 	if err != nil {
 		return err
