@@ -47,7 +47,37 @@ func (s *Server) handleFunctionCall2(c *gin.Context) error {
 
 	routePath := path.Clean(p)
 	logrus.Debugf("Found Route Path: %s, %v", routePath, c.Request.Header)
-	if versions, ok := c.Request.Header["X-Function-Version"]; ok == true {
+	// v1=10,v2=85,v3=5
+	if weights, ok := c.Request.Header["X-Function-Weighted"]; ok == true {
+		if len(weights) > 0 {
+			logrus.Debug("Found Header for Weighted")
+		}
+
+		rrw, ok := s.scheduler.Get(appID + "/" + routePath)
+		if ok {
+			if rrw.data != weights[0] {
+				rrw = &RRW{}
+				err := rrw.AddFrom(weights[0])
+				if err != nil {
+					logrus.Debugf("Error parsing wrr: %v", err)
+				}
+
+				s.scheduler.Set(appID + "/" + routePath, rrw)
+			}
+		} else {
+			rrw = &RRW{}
+			err := rrw.AddFrom(weights[0])
+			if err != nil {
+				logrus.Debugf("Error parsing wrr: %v", err)
+			}
+
+			s.scheduler.Set(appID + "/" + routePath, rrw)
+		}
+
+		routePath = routePath + "/" + rrw.Next().(string)
+		logrus.Debugf("Mod Route Path to: %s", routePath)
+
+	} else if versions, ok := c.Request.Header["X-Function-Version"]; ok == true {
 		if len(versions) > 0 {
 			logrus.Debug("Found version Header")
 			routePath = routePath + "/" + versions[0]

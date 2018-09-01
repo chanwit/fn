@@ -208,6 +208,8 @@ type Server struct {
 	fnAnnotator            FnAnnotator
 	// Extensions can append to this list of contexts so that cancellations are properly handled.
 	extraCtxs []context.Context
+
+	scheduler *SchedulerRRW
 }
 
 func nodeTypeFromString(value string) NodeType {
@@ -617,6 +619,7 @@ func New(ctx context.Context, opts ...Option) *Server {
 		grpcListenPort:  DefaultGRPCPort,
 		lbEnqueue:       agent.NewUnsupportedAsyncEnqueueAccess(),
 		tlsConfigs:      make(map[string]*tls.Config),
+		scheduler:		 NewScheduler(),
 		// Almost everything else is configured through opts (see NewFromEnv for ex.) or below
 	}
 
